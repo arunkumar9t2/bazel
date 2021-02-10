@@ -32,7 +32,10 @@ or
 
 import hashlib
 import os
-from queue import Queue
+try:
+    import Queue from Queue
+except ImportError:
+    import queue as Queue 
 import shutil
 import sys
 import tempfile
