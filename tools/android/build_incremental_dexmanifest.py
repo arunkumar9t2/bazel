@@ -33,7 +33,7 @@ or
 import hashlib
 import os
 try:
-    import Queue from Queue
+    from Queue import Queue
 except ImportError:
     import queue as Queue 
 import shutil
