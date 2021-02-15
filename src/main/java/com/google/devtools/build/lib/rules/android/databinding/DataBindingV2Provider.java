@@ -26,6 +26,10 @@ import com.google.devtools.build.lib.starlarkbuildapi.android.DataBindingV2Provi
 import net.starlark.java.eval.EvalException;
 import net.starlark.java.eval.Sequence;
 
+import java.util.Comparator;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+
 /**
  * A provider that exposes this enables <a
  * href="https://developer.android.com/topic/libraries/data-binding/index.html">data binding</a>
@@ -53,8 +57,8 @@ public final class DataBindingV2Provider extends NativeInfo
       NestedSet<Artifact> transitiveBRFiles,
       ImmutableList<LabelJavaPackagePair> labelAndJavaPackages,
       NestedSet<LabelJavaPackagePair> transitiveLabelAndJavaPackages) {
-    this.classInfos = classInfos;
-    this.setterStores = setterStores;
+    this.classInfos = removeDuplicates(classInfos);
+    this.setterStores = removeDuplicates(setterStores);
     this.transitiveBRFiles = transitiveBRFiles;
     this.labelAndJavaPackages = labelAndJavaPackages;
     this.transitiveLabelAndJavaPackages = transitiveLabelAndJavaPackages;
@@ -162,6 +166,17 @@ public final class DataBindingV2Provider extends NativeInfo
         brFiles.build(),
         labelAndJavaPackages.build(),
         transitiveLabelAndJavaPackages.build());
+  }
+
+  /**
+   * Remove all duplicates from given artifact list. Needed until https://github.com/bazelbuild/bazel/issues/12780 is
+   * fixed
+   */
+  private ImmutableList<Artifact> removeDuplicates(ImmutableList<Artifact> source) {
+   return source.stream()
+            .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Artifact::getExecPath))))
+            .stream()
+            .collect(ImmutableList.toImmutableList());
   }
 
   /** The provider can construct the DataBindingV2Provider provider. */
