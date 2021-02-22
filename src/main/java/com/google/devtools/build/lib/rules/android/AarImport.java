@@ -95,11 +95,17 @@ public class AarImport implements RuleConfiguredTargetFactory {
     SpecialArtifact databindingBrFiles = createAarTreeArtifact(ruleContext, "data-binding-br");
     SpecialArtifact databindingSetterStoreFiles =
         createAarTreeArtifact(ruleContext, "data-binding-setter_store");
-    ruleContext.registerAction(
-        createAarResourcesExtractorActions(
-            ruleContext, aar, resources, assets, databindingBrFiles, databindingSetterStoreFiles));
 
     AndroidDataContext dataContext = androidSemantics.makeContextForNative(ruleContext);
+
+    Artifact databindingClassInfoZip =
+            dataContext.getUniqueDirectoryArtifact("data-binding-base_class_log", "classInfo.zip");
+
+    ruleContext.registerAction(
+            createAarResourcesExtractorActions(
+                    ruleContext, aar, resources, assets, databindingBrFiles, databindingSetterStoreFiles, databindingClassInfoZip));
+
+
     StampedAndroidManifest manifest = AndroidManifest.forAarImport(androidManifestArtifact);
 
     boolean neverlink = JavaCommon.isNeverLink(ruleContext);
@@ -230,7 +236,7 @@ public class AarImport implements RuleConfiguredTargetFactory {
         ruleBuilder, javaInfoBuilder, filesToBuild, /*classJar=*/ null);
 
     DataBindingV2Provider dataBindingV2Provider =
-        createDatabindingProvider(ruleContext, databindingBrFiles, databindingSetterStoreFiles);
+        createDatabindingProvider(ruleContext, databindingBrFiles, databindingSetterStoreFiles, databindingClassInfoZip);
 
     resourceApk.addToConfiguredTargetBuilder(
         ruleBuilder,
@@ -315,7 +321,8 @@ public class AarImport implements RuleConfiguredTargetFactory {
       Artifact resourcesDir,
       Artifact assetsDir,
       Artifact databindingBrFiles,
-      Artifact databindingSetterStoreFiles) {
+      Artifact databindingSetterStoreFiles,
+      Artifact databindingClassLogFiles) {
 
     return new SpawnAction.Builder()
         .useDefaultShellEnvironment()
@@ -327,6 +334,7 @@ public class AarImport implements RuleConfiguredTargetFactory {
         .addOutput(assetsDir)
         .addOutput(databindingBrFiles)
         .addOutput(databindingSetterStoreFiles)
+        .addOutput(databindingClassLogFiles)
         .addCommandLine(
             CustomCommandLine.builder()
                 .addExecPath("--input_aar", aar)
@@ -334,6 +342,7 @@ public class AarImport implements RuleConfiguredTargetFactory {
                 .addExecPath("--output_assets_dir", assetsDir)
                 .addExecPath("--output_databinding_br_dir", databindingBrFiles)
                 .addExecPath("--output_databinding_setter_store_dir", databindingSetterStoreFiles)
+                .addExecPath("--output_databinding_class_info_zip", databindingClassLogFiles)
                 .build())
         .build(ruleContext);
   }
@@ -403,7 +412,8 @@ public class AarImport implements RuleConfiguredTargetFactory {
   private static DataBindingV2Provider createDatabindingProvider(
       RuleContext ruleContext,
       SpecialArtifact databindingBrFiles,
-      SpecialArtifact databindingSetterStoreFiles) {
+      SpecialArtifact databindingSetterStoreFiles,
+      Artifact databindingClassInfoZip) {
 
     Iterable<? extends DataBindingV2ProviderApi<Artifact>> databindingProvidersFromDeps =
         ruleContext.getPrerequisites("deps", DataBindingV2Provider.PROVIDER);
@@ -414,7 +424,7 @@ public class AarImport implements RuleConfiguredTargetFactory {
     DataBindingV2Provider dataBindingV2Provider =
         DataBindingV2Provider.createProvider(
             databindingSetterStoreFiles,
-            /* classInfoFile= */ null,
+            databindingClassInfoZip,
             databindingBrFiles,
             ruleContext.getRule().getLabel().toString(),
             // TODO: The aar's Java package isn't available during analysis (it's in the manifest

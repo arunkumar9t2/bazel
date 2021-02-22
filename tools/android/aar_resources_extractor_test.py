@@ -121,16 +121,26 @@ class AarResourcesExtractorTest(unittest.TestCase):
     setter_store_filepath = (
         "data-binding/" +
         "com.android.databinding.library.baseAdapters--setter_store.json")
+    class_info_filepath = (
+        "data-binding-base-class-log/" +
+        "androidx.databinding.library.baseAdapters-binding_classes.json"
+    )
 
     aar.writestr(br_filepath, "br data")
     aar.writestr(setter_store_filepath, "setter store data")
+    aar.writestr(class_info_filepath, "class info data")
 
     os.makedirs("out_dir/br")
     os.makedirs("out_dir/setter_store")
+    class_info_dir = "out_dir/class_info"
+    os.makedirs(class_info_dir)
 
     aar_resources_extractor.ExtractDatabinding(aar, "br.bin", "out_dir/br")
     aar_resources_extractor.ExtractDatabinding(aar, "setter_store.json",
                                                "out_dir/setter_store")
+
+    aar_resources_extractor.ExtractDatabinding(aar, "binding_classes.json",
+                                               class_info_dir + "/class_info.zip")
 
     with open("out_dir/br/" + br_filepath, "r") as f:
       self.assertEqual("br data", f.read())
@@ -138,6 +148,8 @@ class AarResourcesExtractorTest(unittest.TestCase):
     with open("out_dir/setter_store/" + setter_store_filepath, "r") as f:
       self.assertEqual("setter store data", f.read())
 
+    with zipfile.ZipFile(class_info_dir + "/class_info.zip", "r") as class_info_zip:
+      self.assertIn("androidx.databinding.library.baseAdapters-binding_classes.json", class_info_zip.namelist())
 
 if __name__ == "__main__":
   unittest.main()

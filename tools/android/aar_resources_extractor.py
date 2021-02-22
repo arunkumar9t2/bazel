@@ -49,6 +49,8 @@ flags.DEFINE_string("output_databinding_br_dir", None,
                     "Output directory for databinding br files")
 flags.DEFINE_string("output_databinding_setter_store_dir", None,
                     "Output directory for databinding setter_store.json files")
+flags.DEFINE_string("output_databinding_class_info_zip", None,
+                    "Output path for databinding classInfo.zip file")
 
 
 def ExtractResources(aar, output_res_dir):
@@ -83,13 +85,26 @@ def ExtractAssets(aar, output_assets_dir):
     WriteFileWithJunctions(empty_asset_filename, b"")
 
 
-def ExtractDatabinding(aar, file_suffix, output_databinding_dir):
+def ExtractDatabinding(aar, file_suffix, output_path, create_default=False):
   """Extracts databinding metadata files from an `aar`."""
-  output_databinding_dir_abs = os.path.abspath(output_databinding_dir)
+  output_databinding_dir_abs = os.path.abspath(output_path)
+  output_dir = os.path.dirname(output_path)
   for name in aar.namelist():
     if name.startswith("data-binding/") and name.endswith(file_suffix):
       ExtractOneFile(aar, name, output_databinding_dir_abs)
-
+    if name.startswith("data-binding-base-class-log/") and name.endswith(file_suffix):
+      # Extract binding-classes.json
+      ExtractOneFile(aar, name, output_dir)
+      # Package binding classes json as classInfo.zip for databinding provider
+      with zipfile.ZipFile(output_path, "w") as class_info_zip:
+        for dirname, subdirs, files in os.walk(output_dir):
+          for filename in files:
+            if filename.endswith(file_suffix):
+              class_info_zip.write(os.path.join(dirname, filename), filename)
+  # Create empty classInfo.zip if no binding classes were there.
+  if not os.path.isfile(output_path) and create_default:
+    with zipfile.ZipFile(output_path, "w") as class_info_zip:
+      class_info_zip.writestr("empty.txt", "")
 
 def WriteFileWithJunctions(filename, content):
   """Writes file including creating any junctions or directories necessary."""
@@ -149,6 +164,9 @@ def main(unused_argv):
     if FLAGS.output_databinding_setter_store_dir is not None:
       ExtractDatabinding(aar, "setter_store.json",
                          FLAGS.output_databinding_setter_store_dir)
+    if FLAGS.output_databinding_class_info_zip is not None:
+      ExtractDatabinding(aar, "binding_classes.json",
+                         FLAGS.output_databinding_class_info_zip, True)
 
 
 if __name__ == "__main__":

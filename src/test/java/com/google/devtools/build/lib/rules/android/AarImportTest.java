@@ -279,6 +279,7 @@ public class AarImportTest extends BuildViewTestCase {
     Artifact databindingBrTreeArtifact =
         dataBindingV2Provider.getTransitiveBRFiles().toList().get(0);
     Artifact databindingSetterStoreTreeArtifact = dataBindingV2Provider.getSetterStores().get(0);
+    Artifact databindingClassLogTreeArtifact = dataBindingV2Provider.getClassInfos().get(0);
 
     assertThat(getGeneratingSpawnAction(resourceTreeArtifact).getArguments())
         .containsExactly(
@@ -292,7 +293,10 @@ public class AarImportTest extends BuildViewTestCase {
             "--output_databinding_br_dir",
             databindingBrTreeArtifact.getExecPathString(),
             "--output_databinding_setter_store_dir",
-            databindingSetterStoreTreeArtifact.getExecPathString());
+            databindingSetterStoreTreeArtifact.getExecPathString(),
+            "--output_databinding_class_info_zip",
+            databindingClassLogTreeArtifact.getExecPathString()
+        );
   }
 
   @Test
