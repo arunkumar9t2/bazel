@@ -166,15 +166,15 @@ public class ManifestMergerAction {
           TransformerException, TransformerFactoryConfigurationError, SAXException {
     DocumentBuilder docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     Document doc = docBuilder.parse(manifest.toFile());
-//    for (String tag : PERMISSION_TAGS) {
-//      NodeList permissions = doc.getElementsByTagName(tag);
-//      if (permissions != null) {
-//        for (int i = permissions.getLength() - 1; i >= 0; i--) {
-//          Node permission = permissions.item(i);
-//          permission.getParentNode().removeChild(permission);
-//        }
-//      }
-//    }
+    for (String tag : PERMISSION_TAGS) {
+      NodeList permissions = doc.getElementsByTagName(tag);
+      if (permissions != null) {
+        for (int i = permissions.getLength() - 1; i >= 0; i--) {
+          Node permission = permissions.item(i);
+          permission.getParentNode().removeChild(permission);
+        }
+      }
+    }
     // Write resulting manifest to the output directory, maintaining full path to prevent collisions
     Path output = outputDir.resolve(manifest.toString().replaceFirst("^/", ""));
     Files.createDirectories(output.getParent());
