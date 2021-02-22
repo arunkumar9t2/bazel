@@ -48,6 +48,7 @@ import com.google.devtools.build.lib.rules.java.JavaToolchainProvider;
 import com.google.devtools.build.lib.starlarkbuildapi.android.DataBindingV2ProviderApi;
 import com.google.devtools.build.lib.vfs.PathFragment;
 import javax.annotation.Nullable;
+import java.util.Map;
 
 /**
  * An implementation for the aar_import rule.
@@ -411,6 +412,8 @@ public class AarImport implements RuleConfiguredTargetFactory {
     Iterable<? extends DataBindingV2ProviderApi<Artifact>> databindingProvidersFromExports =
         ruleContext.getPrerequisites("exports", DataBindingV2Provider.PROVIDER);
 
+    Map<String, String> databindingPackageInfo = AndroidCommon.getAndroidConfig(ruleContext).dataBindingPackageInfo();
+
     DataBindingV2Provider dataBindingV2Provider =
         DataBindingV2Provider.createProvider(
             databindingSetterStoreFiles,
@@ -422,7 +425,7 @@ public class AarImport implements RuleConfiguredTargetFactory {
             // constructing  a nice error message if multiple android_library rules try to generate
             // databinding conflicting classes into the same Java package, so it's not as important
             // for aars.
-            /* javaPackage= */ null,
+            /* javaPackage= */ databindingPackageInfo.getOrDefault(ruleContext.attributes().getName(), null),
             databindingProvidersFromDeps,
             databindingProvidersFromExports);
 

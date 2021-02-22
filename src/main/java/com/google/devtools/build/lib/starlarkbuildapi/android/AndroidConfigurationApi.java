@@ -19,6 +19,8 @@ import net.starlark.java.annot.StarlarkBuiltin;
 import net.starlark.java.annot.StarlarkMethod;
 import net.starlark.java.eval.StarlarkValue;
 
+import java.util.Map;
+
 /** Configuration fragment for Android rules. */
 @StarlarkBuiltin(
     name = "android",
@@ -220,6 +222,13 @@ public interface AndroidConfigurationApi extends StarlarkValue {
       doc = "",
       documented = false)
   boolean useDataBindingAndroidX();
+
+  @StarlarkMethod(
+      name = "android_databinding_package_info",
+      structField = true,
+      doc = "",
+      documented = false)
+  Map<String, String> dataBindingPackageInfo();
 
   @StarlarkMethod(
       name = "persistent_busybox_tools",

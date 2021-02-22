@@ -31,14 +31,21 @@ import com.google.devtools.build.lib.rules.cpp.CppConfiguration.DynamicMode;
 import com.google.devtools.build.lib.rules.cpp.CppOptions.DynamicModeConverter;
 import com.google.devtools.build.lib.rules.cpp.CppOptions.LibcTopLabelConverter;
 import com.google.devtools.build.lib.starlarkbuildapi.android.AndroidConfigurationApi;
+import com.google.devtools.common.options.Converter;
 import com.google.devtools.common.options.Converters;
 import com.google.devtools.common.options.EnumConverter;
 import com.google.devtools.common.options.Option;
 import com.google.devtools.common.options.OptionDocumentationCategory;
 import com.google.devtools.common.options.OptionEffectTag;
 import com.google.devtools.common.options.OptionMetadataTag;
-import java.util.List;
+import com.google.devtools.common.options.OptionsParsingException;
+
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Configuration fragment for Android rules. */
 @Immutable
@@ -76,6 +83,27 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
       extends EnumConverter<ManifestMergerOrder> {
     public ManifestMergerOrderConverter() {
       super(ManifestMergerOrder.class, "android manifest merger order");
+    }
+  }
+
+  public static final class DatabindingPackageMapConverter implements Converter<Map<String, String>> {
+    @Override
+    public Map<String, String> convert(String input) throws OptionsParsingException {
+      try {
+        if (input.equals("null")) {
+          return new HashMap<>();
+        } else {
+          return Arrays.stream(input.split(","))
+                  .collect(Collectors.toMap(entry -> entry.split("=")[0], entry -> entry.split("=")[1]));
+        }
+      } catch (Exception e) {
+        throw new OptionsParsingException("Error parsing databinding package info");
+      }
+    }
+
+    @Override
+    public String getTypeDescription() {
+      return "a comma seperated list of databinding package names";
     }
   }
 
@@ -687,6 +715,21 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
     public boolean dataBindingAndroidX;
 
     @Option(
+        name = "android_databinding_package_info",
+        converter = DatabindingPackageMapConverter.class,
+        defaultValue = "null",
+        documentationCategory = OptionDocumentationCategory.OUTPUT_PARAMETERS,
+        effectTags = {
+                OptionEffectTag.AFFECTS_OUTPUTS,
+                OptionEffectTag.LOADING_AND_ANALYSIS,
+                OptionEffectTag.LOSES_INCREMENTAL_STATE
+        },
+        metadataTags = OptionMetadataTag.EXPERIMENTAL,
+        help = "List of databinding package info provided in key=value format"
+    )
+    public Map<String, String> databindingPackageMap;
+
+    @Option(
         name = "experimental_android_library_exports_manifest_default",
         defaultValue = "false",
         documentationCategory = OptionDocumentationCategory.UNDOCUMENTED,
@@ -943,6 +986,7 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
       host.persistentBusyboxTools = persistentBusyboxTools;
 
       host.incompatibleProhibitAapt1 = incompatibleProhibitAapt1;
+      host.databindingPackageMap = databindingPackageMap;
 
       // Unless the build was started from an Android device, host means MAIN.
       host.configurationDistinguisher = ConfigurationDistinguisher.MAIN;
@@ -987,6 +1031,7 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
   private final boolean dataBindingV2;
   private final boolean dataBindingUpdatedArgs;
   private final boolean dataBindingAndroidX;
+  private final Map<String, String> dataBindingPackageInfo;
   private final boolean persistentBusyboxTools;
   private final boolean filterRJarsFromAndroidTest;
   private final boolean removeRClassesFromInstrumentationTestJar;
@@ -1043,6 +1088,7 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
     this.dataBindingV2 = options.dataBindingV2;
     this.dataBindingUpdatedArgs = options.dataBindingUpdatedArgs;
     this.dataBindingAndroidX = options.dataBindingAndroidX;
+    this.dataBindingPackageInfo = options.databindingPackageMap;
     this.persistentBusyboxTools = options.persistentBusyboxTools;
     this.filterRJarsFromAndroidTest = options.filterRJarsFromAndroidTest;
     this.removeRClassesFromInstrumentationTestJar =
@@ -1279,6 +1325,11 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
   @Override
   public boolean useDataBindingAndroidX() {
     return dataBindingAndroidX;
+  }
+
+  @Override
+  public Map<String, String> dataBindingPackageInfo() {
+    return dataBindingPackageInfo == null ? new HashMap<>() : dataBindingPackageInfo;
   }
 
   @Override
