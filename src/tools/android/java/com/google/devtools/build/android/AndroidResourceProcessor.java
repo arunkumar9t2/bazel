@@ -434,7 +434,7 @@ public class AndroidResourceProcessor {
 
     ProcessXmlOptions options = new ProcessXmlOptions();
     options.setAppId(packagePath);
-    options.setResInput(inputResourcesDir.toFile());
+    options.setResInput(inputResourcesDir.toFile().getAbsoluteFile());
     options.setResOutput(processedResourceDir.toFile());
     options.setLayoutInfoOutput(dataBindingInfoOut.toFile());
     options.setUseAndroidX(useDataBindingAndroidX);
