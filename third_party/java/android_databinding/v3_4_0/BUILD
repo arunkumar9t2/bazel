@@ -50,6 +50,7 @@ java_import(
         ":x_common",
         "//third_party:android-annotations",
         "//third_party:apache_commons_io",
+        "//third_party:auto_common_java",
         "//third_party:checker_framework_annotations",
         "//third_party:error_prone_annotations",
         "//third_party:guava",

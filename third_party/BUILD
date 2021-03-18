@@ -250,6 +250,11 @@ distrib_java_import(
     jars = ["auto/auto-common-0.10.jar"],
 )
 
+java_import(
+    name = "auto_common_java",
+    jars = ["auto/auto-common-0.10.jar"],
+)
+
 java_library(
     name = "auto_service",
     exported_plugins = [
