@@ -147,6 +147,8 @@ java_library(
         "JavaOptions.java",
         "JavaPackageConfigurationProvider.java",
         "JavaPluginInfoProvider.java",
+        "TransitiveDepFilter.java",
+        "TransitiveDepFilterImpl.java",
         "JavaRuleClasses.java",
         "JavaRuleOutputJarsProvider.java",
         "JavaRunfilesProvider.java",

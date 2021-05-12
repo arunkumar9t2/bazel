@@ -62,6 +62,7 @@ import com.google.devtools.build.lib.rules.java.JavaCompilationInfoProvider;
 import com.google.devtools.build.lib.rules.java.JavaInfo;
 import com.google.devtools.build.lib.rules.java.JavaRuleOutputJarsProvider;
 import com.google.devtools.build.lib.rules.java.JavaRuleOutputJarsProvider.OutputJar;
+import com.google.devtools.build.lib.rules.java.TransitiveDepFilterImpl;
 import com.google.devtools.build.lib.rules.java.proto.JavaProtoAspectCommon;
 import com.google.devtools.build.lib.rules.java.proto.JavaProtoLibraryAspectProvider;
 import com.google.devtools.build.lib.rules.proto.ProtoInfo;
@@ -281,7 +282,7 @@ public final class DexArchiveAspect extends NativeAspectClass implements Configu
       for (Artifact jar : jarsToProcess) {
         Artifact desugared =
             createDesugarAction(
-                ruleContext, basenameClash, jar, bootclasspath, compileTimeClasspath);
+                ruleContext, basenameClash, jar, bootclasspath, new TransitiveDepFilterImpl(ruleContext).filter(compileTimeClasspath));
         newlyDesugared.put(jar, desugared);
         desugaredJars.addDesugaredJar(jar, desugared);
       }

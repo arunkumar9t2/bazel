@@ -279,7 +279,7 @@ public final class JavaCompilationHelper {
               .addTransitive(attributes.getDirectJars())
               .build());
     } else {
-      builder.setClasspathEntries(attributes.getCompileTimeClassPath());
+      builder.setClasspathEntries(new TransitiveDepFilterImpl(ruleContext).filter(attributes.getCompileTimeClassPath()));
       builder.setDirectJars(attributes.getDirectJars());
     }
     builder.setSourcePathEntries(attributes.getSourcePath());
@@ -496,7 +496,7 @@ public final class JavaCompilationHelper {
     JavaHeaderCompileActionBuilder builder = new JavaHeaderCompileActionBuilder(getRuleContext());
     builder.setSourceFiles(attributes.getSourceFiles());
     builder.setSourceJars(attributes.getSourceJars());
-    builder.setClasspathEntries(attributes.getCompileTimeClassPath());
+    builder.setClasspathEntries(new TransitiveDepFilterImpl(ruleContext).filter(attributes.getCompileTimeClassPath()));
     builder.setBootclasspathEntries(getBootclasspathOrDefault().bootclasspath());
     // Exclude any per-package configured data (see JavaCommon.computePerPackageData).
     // It is used to allow Error Prone checks to load additional data,
