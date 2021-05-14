@@ -43,7 +43,11 @@ public class TransitiveDepFilterImpl implements TransitiveDepFilter {
                                     break;
                                 }
                             }
-                            return isAndroidSdk || isValidTarget || isDirectDep;
+                            final boolean isAllowed = isAndroidSdk || isValidTarget || isDirectDep;
+                            if (!isAllowed) {
+                                // System.err.println(self + ": Removed:" + artifact.getExecPathString());
+                            }
+                            return isAllowed;
                         }).collect(Collectors.toList());
                 return filtered.addAll(filteredArtifacts).build();
             }
