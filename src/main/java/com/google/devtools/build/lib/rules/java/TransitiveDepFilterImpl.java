@@ -23,28 +23,29 @@ public class TransitiveDepFilterImpl implements TransitiveDepFilter {
     }
 
     private NestedSet<Artifact> filterTransDeps(NestedSet<Artifact> input) {
-        AttributeMap attributes = ruleContext.attributes();
+        final AttributeMap attributes = ruleContext.attributes();
         if (attributes.has("tags")) {
-            List<String> tags = attributes.get("tags", Type.STRING_LIST);
-            String self = getSelfTag(tags);
+            final List<String> tags = attributes.get("tags", Type.STRING_LIST);
+            final String self = getSelfTag(tags);
             if (self != null) {
-                // filter here
-                tags = directTags(tags);
-                NestedSetBuilder<Artifact> filtered = new NestedSetBuilder(input.getOrder());
-                for (Artifact item : input.toList()) {
-                    String owner = item.getOwner().toString();
-                    if (!owner.startsWith("//") || owner.contains(self)) {
-                        filtered.add(item);
-                        continue;
-                    }
-                    for (String tag : tags) {
-                        if (owner.startsWith(tag)) {
-                            filtered.add(item);
-                        } else {
-                        }
-                    }
-                }
-                return filtered.build();
+                final List<String> directTags = directTags(tags);
+                final NestedSetBuilder<Artifact> filtered = new NestedSetBuilder(input.getOrder());
+                final List<Artifact> filteredArtifacts = input.toList()
+                        .stream()
+                        .filter(artifact -> {
+                            final boolean isAndroidSdk = artifact.getExecPathString().endsWith("android-ijar.jar");
+                            final String targetLabel = artifact.getOwner().toString();
+                            final boolean isValidTarget = !targetLabel.startsWith("//") || targetLabel.contains(self);
+                            boolean isDirectDep = false;
+                            for (String tag : directTags) {
+                                if (targetLabel.startsWith(tag)) {
+                                    isDirectDep = true;
+                                    break;
+                                }
+                            }
+                            return isAndroidSdk || isValidTarget || isDirectDep;
+                        }).collect(Collectors.toList());
+                return filtered.addAll(filteredArtifacts).build();
             }
         }
         return input;
