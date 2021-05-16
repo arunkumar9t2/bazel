@@ -64,7 +64,7 @@ class DisabledDataBindingV2Context implements DataBindingContext {
         setterStores.addAll(provider.getSetterStores());
         classInfos.addAll(provider.getClassInfos());
         brFiles.addTransitive(provider.getTransitiveBRFiles());
-        exportedLabelJavaPackages.addAll(provider.getLabelAndJavaPackages());
+        // exportedLabelJavaPackages.addAll(provider.getLabelAndJavaPackages());
         targetNameAndJavaPackages.addTransitive(provider.getTransitiveLabelAndJavaPackages());
       }
     }

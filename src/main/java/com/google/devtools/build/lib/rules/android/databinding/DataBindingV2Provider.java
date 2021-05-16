@@ -155,7 +155,7 @@ public final class DataBindingV2Provider extends NativeInfo
         setterStoreFiles.addAll(provider.getSetterStores());
         classInfoFiles.addAll(provider.getClassInfos());
         brFiles.addTransitive(provider.getTransitiveBRFiles());
-        labelAndJavaPackages.addAll(provider.getLabelAndJavaPackages());
+        // labelAndJavaPackages.addAll(provider.getLabelAndJavaPackages());
         transitiveLabelAndJavaPackages.addTransitive(provider.getTransitiveLabelAndJavaPackages());
       }
     }
