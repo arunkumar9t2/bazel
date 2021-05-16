@@ -95,7 +95,7 @@ class DataBindingV2Context implements DataBindingContext {
     // Unused.
     args.exportClassListTo("/tmp/exported_classes");
     args.modulePackage(AndroidCommon.getJavaPackage(ruleContext));
-    args.directDependencyPkgs(getJavaPackagesOfDirectDependencies(ruleContext));
+    args.directDependencyPkgs(getJavaPackagesOfDirectDependencies(ruleContext, isBinary));
 
     // The minimum Android SDK compatible with this rule.
     // TODO(bazel-team): This probably should be based on the actual min-sdk from the manifest,
@@ -114,16 +114,21 @@ class DataBindingV2Context implements DataBindingContext {
     consumer.accept(args.build());
   }
 
-  private static Set<String> getJavaPackagesOfDirectDependencies(RuleContext ruleContext) {
-
+  private static Set<String> getJavaPackagesOfDirectDependencies(RuleContext ruleContext, boolean isBinary) {
     ImmutableSet.Builder<String> javaPackagesOfDirectDependencies = ImmutableSet.builder();
     if (ruleContext.attributes().has("deps", BuildType.LABEL_LIST)) {
       Iterable<DataBindingV2Provider> providers =
           ruleContext.getPrerequisites("deps", DataBindingV2Provider.PROVIDER);
 
       for (DataBindingV2Provider provider : providers) {
-        for (LabelJavaPackagePair labelJavaPackagePair : provider.getLabelAndJavaPackages()) {
-          javaPackagesOfDirectDependencies.add(labelJavaPackagePair.getJavaPackage());
+        if (isBinary) {
+          for (LabelJavaPackagePair labelJavaPackagePair : provider.getTransitiveLabelAndJavaPackages().toList()) {
+            javaPackagesOfDirectDependencies.add(labelJavaPackagePair.getJavaPackage());
+          }
+        } else {
+          for (LabelJavaPackagePair labelJavaPackagePair : provider.getLabelAndJavaPackages()) {
+            javaPackagesOfDirectDependencies.add(labelJavaPackagePair.getJavaPackage());
+          }
         }
       }
     }
