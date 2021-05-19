@@ -103,7 +103,7 @@ public class ValidatedAndroidResources extends MergedAndroidResources
   static ValidatedAndroidResources of(
       MergedAndroidResources merged,
       Artifact rTxt,
-      Artifact sourceJar,
+      @Nullable Artifact sourceJar,
       @Nullable Artifact apk,
       @Nullable Artifact aapt2ValidationArtifact,
       @Nullable Artifact aapt2SourceJar,
@@ -123,7 +123,7 @@ public class ValidatedAndroidResources extends MergedAndroidResources
   private ValidatedAndroidResources(
       MergedAndroidResources merged,
       Artifact rTxt,
-      Artifact sourceJar,
+      @Nullable Artifact sourceJar,
       @Nullable Artifact apk,
       @Nullable Artifact aapt2ValidationArtifact,
       @Nullable Artifact aapt2SourceJar,

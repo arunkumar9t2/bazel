@@ -764,6 +764,14 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
     public boolean fixedResourceNeverlinking;
 
     @Option(
+            name = "link_library_resources",
+            defaultValue = "true",
+            documentationCategory = OptionDocumentationCategory.UNDOCUMENTED,
+            effectTags = {OptionEffectTag.CHANGES_INPUTS},
+            help = "If disabled does not run aapt2 link for android_library targets")
+    public boolean linkLibraryResources;
+
+    @Option(
         name = "android_migration_tag_check",
         defaultValue = "false",
         documentationCategory = OptionDocumentationCategory.UNDOCUMENTED,
@@ -1063,6 +1071,7 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
   private final Label legacyMainDexListGenerator;
   private final boolean disableInstrumentationManifestMerging;
   private final boolean incompatibleUseToolchainResolution;
+  private final boolean linkLibraryResources;
 
   public AndroidConfiguration(BuildOptions buildOptions) throws InvalidConfigurationException {
     Options options = buildOptions.get(Options.class);
@@ -1138,6 +1147,7 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
       throw new InvalidConfigurationException(
           "Java 8 library support requires --desugar_java8 to be enabled.");
     }
+    linkLibraryResources = options.linkLibraryResources;
   }
 
   @Override
@@ -1397,6 +1407,10 @@ public class AndroidConfiguration extends Fragment implements AndroidConfigurati
 
   public boolean disableInstrumentationManifestMerging() {
     return disableInstrumentationManifestMerging;
+  }
+
+  boolean linkLibraryResources() {
+    return linkLibraryResources;
   }
 
   boolean outputLibraryLinkedResources() {

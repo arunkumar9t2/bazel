@@ -384,16 +384,14 @@ public class AndroidCommon {
     return ImmutableList.of(ruleContext.getHostPrerequisiteArtifact("debug_key"));
   }
 
-  private void compileResources(
-      JavaSemantics javaSemantics,
-      Artifact resourceJavaClassJar,
-      Artifact resourceJavaSrcJar,
-      JavaCompilationArtifacts.Builder artifactsBuilder,
-      JavaTargetAttributes.Builder attributes,
-      NestedSetBuilder<Artifact> filesBuilder)
-      throws InterruptedException, RuleErrorException {
+  private void addResourceClassJarToClassPath(
+          Artifact resourceJavaClassJar,
+          JavaCompilationArtifacts.Builder artifactsBuilder,
+          JavaTargetAttributes.Builder attributes,
+          NestedSetBuilder<Artifact> filesBuilder)
+          throws InterruptedException {
 
-    packResourceSourceJar(javaSemantics, resourceJavaSrcJar);
+    // packResourceSourceJar(javaSemantics, resourceJavaSrcJar);
 
     // Add the compiled resource jar to the classpath of the main compilation.
     attributes.addDirectJars(NestedSetBuilder.create(Order.STABLE_ORDER, resourceJavaClassJar));
@@ -404,7 +402,7 @@ public class AndroidCommon {
     artifactsBuilder.addCompileTimeJarAsFullJar(resourceJavaClassJar);
 
     // Add the compiled resource jar as a declared output of the rule.
-    filesBuilder.add(resourceSourceJar);
+    // filesBuilder.add(resourceSourceJar);
     filesBuilder.add(resourceJavaClassJar);
   }
 
@@ -477,17 +475,22 @@ public class AndroidCommon {
     NestedSetBuilder<Artifact> jarsProducedForRuntime = NestedSetBuilder.<Artifact>stableOrder();
     NestedSetBuilder<Artifact> filesBuilder = NestedSetBuilder.<Artifact>stableOrder();
 
-    Artifact resourceJavaSrcJar = resourceApk.getResourceJavaSrcJar();
-    if (resourceJavaSrcJar != null) {
-      filesBuilder.add(resourceJavaSrcJar);
+    // If resources are being linked then include R.java in source jar
+    if (getAndroidConfig(ruleContext).linkLibraryResources()) {
+      Artifact resourceJavaSrcJar = resourceApk.getResourceJavaSrcJar();
+      if (resourceJavaSrcJar != null) {
+        filesBuilder.add(resourceJavaSrcJar);
 
-      compileResources(
-          javaSemantics,
-          resourceApk.getResourceJavaClassJar(),
-          resourceJavaSrcJar,
-          artifactsBuilder,
-          attributesBuilder,
-          filesBuilder);
+        packResourceSourceJar(javaSemantics, resourceJavaSrcJar);
+
+        // Add the compiled resource jar as a declared output of the rule.
+        filesBuilder.add(resourceSourceJar);
+      }
+    }
+
+    if (resourceApk.getResourceJavaClassJar() != null) {
+      addResourceClassJarToClassPath(resourceApk.getResourceJavaClassJar(),
+              artifactsBuilder, attributesBuilder, filesBuilder);
 
       // Combined resource constants needs to come even before our own classes that may contain
       // local resource constants.
