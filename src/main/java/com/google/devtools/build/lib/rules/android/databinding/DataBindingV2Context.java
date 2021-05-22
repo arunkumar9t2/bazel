@@ -26,7 +26,9 @@ import com.google.devtools.build.lib.analysis.RuleContext;
 import com.google.devtools.build.lib.analysis.actions.ActionConstructionContext;
 import com.google.devtools.build.lib.analysis.actions.CustomCommandLine;
 import com.google.devtools.build.lib.analysis.actions.SpawnAction;
+import com.google.devtools.build.lib.packages.AttributeMap;
 import com.google.devtools.build.lib.packages.BuildType;
+import com.google.devtools.build.lib.packages.Type;
 import com.google.devtools.build.lib.rules.android.AndroidCommon;
 import com.google.devtools.build.lib.rules.android.AndroidDataBindingProcessorBuilder;
 import com.google.devtools.build.lib.rules.android.AndroidDataContext;
@@ -40,9 +42,12 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.devtools.build.lib.rules.java.TransitiveDepFilterImpl.directTags;
+import static com.google.devtools.build.lib.rules.java.TransitiveDepFilterImpl.getSelfTag;
 
 class DataBindingV2Context implements DataBindingContext {
 
@@ -234,10 +239,41 @@ class DataBindingV2Context implements DataBindingContext {
         setterStoreFiles.addAll(provider.getSetterStores());
       }
     }
+    Predicate<? super Artifact> transitiveFilter = filterTransitiveArtifacts(context);
+
     return setterStoreFiles.stream()
             .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Artifact::getExecPath))))
             .stream()
+            .filter(transitiveFilter)
             .collect(ImmutableList.toImmutableList());
+  }
+
+  private static Predicate<? super Artifact> filterTransitiveArtifacts(RuleContext ruleContext) {
+    return (Predicate<Artifact>) artifact -> {
+      final AttributeMap attributes = ruleContext.attributes();
+      if (attributes.has("tags")) {
+        final List<String> tags = attributes.get("tags", Type.STRING_LIST);
+        final String self = getSelfTag(tags);
+        if (self != null) {
+          final List<String> directTags = directTags(tags);
+          final String targetLabel = artifact.getOwner().toString();
+          final boolean isValidTarget = !targetLabel.startsWith("//") || targetLabel.contains(self);
+          boolean isDirectDep = false;
+          for (String tag : directTags) {
+            if (targetLabel.startsWith(tag)) {
+              isDirectDep = true;
+              break;
+            }
+          }
+          boolean isAllowed = isDirectDep || isValidTarget;
+          if (!isAllowed) {
+            System.err.println(self + ": Removed:" + artifact.getExecPathString());
+          }
+          return isAllowed;
+        }
+      }
+      return true;
+    };
   }
 
   /**
@@ -342,9 +378,11 @@ class DataBindingV2Context implements DataBindingContext {
         classInfoFiles.addAll(provider.getClassInfos());
       }
     }
+    Predicate<? super Artifact> transitiveFilter = filterTransitiveArtifacts(context);
     return classInfoFiles.stream()
             .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Artifact::getExecPath))))
             .stream()
+            .filter(transitiveFilter)
             .collect(ImmutableList.toImmutableList());
   }
 

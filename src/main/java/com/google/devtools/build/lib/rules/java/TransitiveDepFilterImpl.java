@@ -55,14 +55,14 @@ public class TransitiveDepFilterImpl implements TransitiveDepFilter {
         return input;
     }
 
-    private List<String> directTags(List<String> tags) {
+    public static List<String> directTags(List<String> tags) {
         return tags.stream()
                 .filter(s -> s.startsWith("@direct//"))
                 .map(s -> s.substring(7) + ":")
                 .collect(Collectors.toList());
     }
 
-    private String getSelfTag(List<String> tags) {
+    public static String getSelfTag(List<String> tags) {
         for (String tag : tags) {
             if (tag.startsWith("@self//")) return tag.substring(6) + ":";
         }
