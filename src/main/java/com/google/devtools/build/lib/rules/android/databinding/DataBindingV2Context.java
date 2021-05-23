@@ -33,6 +33,7 @@ import com.google.devtools.build.lib.rules.android.AndroidDataContext;
 import com.google.devtools.build.lib.rules.android.AndroidResources;
 import com.google.devtools.build.lib.rules.java.JavaInfo;
 import com.google.devtools.build.lib.rules.java.JavaPluginInfoProvider;
+import com.google.devtools.build.lib.rules.java.TransitiveDepFilterImpl;
 import com.google.devtools.build.lib.starlarkbuildapi.android.DataBindingV2ProviderApi;
 import com.google.devtools.build.lib.starlarkbuildapi.android.DataBindingV2ProviderApi.LabelJavaPackagePair;
 
@@ -40,6 +41,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -193,12 +195,15 @@ class DataBindingV2Context implements DataBindingContext {
           DataBinding.symlinkDepsMetadataIntoOutputTree(ruleContext, transitiveBRFile));
     }
 
-    for (Artifact directSetterStoreFile : getDirectSetterStoreFiles(ruleContext)) {
+    Predicate<? super Artifact> artifactsFilter = new TransitiveDepFilterImpl(ruleContext)
+            .filterTransitiveArtifacts();
+
+    for (Artifact directSetterStoreFile : getDirectSetterStoreFiles(ruleContext, artifactsFilter)) {
       dataBindingJavaInputs.add(
           DataBinding.symlinkDepsMetadataIntoOutputTree(ruleContext, directSetterStoreFile));
     }
 
-    for (Artifact classInfo : getDirectClassInfo(ruleContext)) {
+    for (Artifact classInfo : getDirectClassInfo(ruleContext, artifactsFilter)) {
       dataBindingJavaInputs.add(
           DataBinding.symlinkDepsMetadataIntoOutputTree(ruleContext, classInfo));
     }
@@ -223,7 +228,7 @@ class DataBindingV2Context implements DataBindingContext {
             .collect(ImmutableList.toImmutableList());
   }
 
-  private static List<Artifact> getDirectSetterStoreFiles(RuleContext context) {
+  private static List<Artifact> getDirectSetterStoreFiles(RuleContext context, Predicate<? super Artifact> artifactsFilter) {
     List<Artifact> setterStoreFiles = new ArrayList<>();
     if (context.attributes().has("deps", BuildType.LABEL_LIST)) {
 
@@ -237,6 +242,7 @@ class DataBindingV2Context implements DataBindingContext {
     return setterStoreFiles.stream()
             .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Artifact::getExecPath))))
             .stream()
+            .filter(artifactsFilter)
             .collect(ImmutableList.toImmutableList());
   }
 
@@ -311,7 +317,9 @@ class DataBindingV2Context implements DataBindingContext {
             .add("-zipSourceOutput", "true")
             .add("-useAndroidX", useAndroidX ? "true" : "false");
 
-    List<Artifact> dependencyClassInfo = getDirectClassInfo(ruleContext);
+    Predicate<? super Artifact> artifactsFilter = new TransitiveDepFilterImpl(ruleContext)
+            .filterTransitiveArtifacts();
+    List<Artifact> dependencyClassInfo = getDirectClassInfo(ruleContext, artifactsFilter);
     for (Artifact artifact : dependencyClassInfo) {
       commandLineBuilder.addExecPath("-dependencyClassInfoList", artifact);
     }
@@ -331,7 +339,7 @@ class DataBindingV2Context implements DataBindingContext {
     return ImmutableList.of(srcOutFile);
   }
 
-  private static List<Artifact> getDirectClassInfo(RuleContext context) {
+  private static List<Artifact> getDirectClassInfo(RuleContext context, Predicate<? super Artifact> artifactsFilter) {
     List<Artifact> classInfoFiles = new ArrayList<>();
     if (context.attributes().has("deps", BuildType.LABEL_LIST)) {
 
@@ -345,6 +353,7 @@ class DataBindingV2Context implements DataBindingContext {
     return classInfoFiles.stream()
             .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(Artifact::getExecPath))))
             .stream()
+            .filter(artifactsFilter)
             .collect(ImmutableList.toImmutableList());
   }
 
